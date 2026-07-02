@@ -1,0 +1,23 @@
+name: CI/CD Pipeline Example
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run Pytest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Set Up Environment
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - name: Install Dependencies
+        run: uv sync --all-groups
+      - name: Run Tests with Pytest
+        run: uv run pytest
