@@ -26,3 +26,8 @@ skip-magic-trailing-comma = false
 members = [
     "monolith-script",
 ]
+
+[dependency-groups]
+dev = [
+    "python-dotenv>=1.2.2",
+]
