@@ -10,10 +10,18 @@ jobs:
   lint:
     name: Ruff Code Quality Validation
     runs-on: ubuntu-latest
+    # steps:
+    #   - name: Get Terraform Python Version
+    #     id: terraform-python-version
+    #     uses: dflook/terraform-version-extractor@v2
+    #   - name: Setup Terraform
+    #     uses: hashicorp/setup-terraform@v3
+    #     with:
+    #       terraform_version: ${{ steps.tf-version.outputs.version }}
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-    - name: Get Python Verion
+    - name: Get Python Version
       id: setup-python
       uses: actions/setup-python@v5
       with:
@@ -21,7 +29,7 @@ jobs:
     - name: Set Up Environment
       uses: astral-sh/setup-uv@v5
       with:
-        python-version: ${{ steps: setup-python.output.python-version }}
+        python-version: ${{ steps.setup-python.output.python-version }}
     - name: Lint with Ruff
       run: uv run ruff check .
     - name: Format with Ruff
