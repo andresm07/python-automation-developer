@@ -7,6 +7,25 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    name: Ruff Code Quality Validation
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    - name: Get Python Verion
+      id: setup-python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: "pyproject.toml"
+    - name: Set Up Environment
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: ${{ steps: setup-python.output.python-version }}
+    - name: Lint with Ruff
+      run: uv run ruff check .
+    - name: Format with Ruff
+      run: uv run ruff format --check .
   test:
     name: Run Pytest Validation
     runs-on: ubuntu-latest
