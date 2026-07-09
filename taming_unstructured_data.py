@@ -1,3 +1,5 @@
+import re
+
 user_input = "   Rpt_2023-FINAL.csv  "
 print(f"String without normalization: {user_input}")
 
@@ -44,3 +46,14 @@ raw_name = "Andr\u00c3\u00a9s"
 fixed_name = raw_name.encode("latin1").decode("utf-8")
 
 print(f"Raw Name: {raw_name}, Fixed Name: {fixed_name}")
+
+
+#! ---------------- REGEX ----------------
+
+# * user@domain.com
+
+email_regex = r"^[a-zA-Z0-9.-_+]+@[a-zA-Z0-9.-_]+\.[a-zA-Z]{2,}$"
+
+email = "user@domain.com"
+
+print(bool(re.match(email_regex, email)))
