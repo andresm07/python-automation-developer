@@ -37,3 +37,10 @@ for word in full_name:
     camel_case_full_name_format += word.capitalize()
 
 print(camel_case_full_name_format)
+
+#! AndrÃ©s -> Andrés
+raw_name = "Andr\u00c3\u00a9s"
+
+fixed_name = raw_name.encode("latin1").decode("utf-8")
+
+print(f"Raw Name: {raw_name}, Fixed Name: {fixed_name}")
