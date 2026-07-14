@@ -1,0 +1,7 @@
+hello world from python
+line 1
+line 2
+line 3
+I'm appending content instead of rewriting the file
+I'm appending content instead of rewriting the file
+I'm appending content instead of rewriting the file
