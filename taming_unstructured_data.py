@@ -1,6 +1,11 @@
 # import re
 # from typing import Annotated
 
+import csv
+import json
+
+import pandas as pd
+
 # from pydantic import BaseModel, Field, StringConstraints
 
 # # user_input = "   Rpt_2023-FINAL.csv  "
@@ -180,43 +185,117 @@
 #! ---------- FILES ----------
 
 # ? opening method -> r (read)
-with open("example.txt", "r") as file:
-    full_file = file.read()  # ? reads the entire file as a single string -> best for regex pattern matching
-    print(full_file)
-    file.seek(0)  # ? reset cursor position to beginning of file
-    print("---------------------")
-    lines = file.readlines()  # ? read file line by line, returns list of lines
-    print(lines)
-    file.seek(0)
-    print("---------------------")
-    first_line = file.readline()  # ? reads the file, one line at a time
-    second_line = file.readline()
-    print(first_line)
-    print(second_line)
+# with open("example.txt", "r") as file:
+#     full_file = file.read()  # ? reads the entire file as a single string -> best for regex pattern matching
+#     print(full_file)
+#     file.seek(0)  # ? reset cursor position to beginning of file
+#     print("---------------------")
+#     lines = file.readlines()  # ? read file line by line, returns list of lines
+#     print(lines)
+#     file.seek(0)
+#     print("---------------------")
+#     first_line = file.readline()  # ? reads the file, one line at a time
+#     second_line = file.readline()
+#     print(first_line)
+#     print(second_line)
 
-# ? opening method -> w (write)
-# * [WARNING] 'w' rewrites the entire file!!
-with open("example2.txt", "w") as file:
-    file.write(
-        "hello world from python\n"
-    )  # ? writes a single string (line) to the file. It does NOT add "\n" (Enter) by default, you must do so manually if needed
-    file.writelines(
-        ["line 1\n", "line 2\n", "line 3\n"]
-    )  # ? writes multiple strings (lines) to the file. It does NOT add "\n" (Enter) by default, you must do so manually if needed
+# # ? opening method -> w (write)
+# # * [WARNING] 'w' rewrites the entire file!!
+# with open("example2.txt", "w") as file:
+#     file.write(
+#         "hello world from python\n"
+#     )  # ? writes a single string (line) to the file. It does NOT add "\n" (Enter) by default, you must do so manually if needed
+#     file.writelines(
+#         ["line 1\n", "line 2\n", "line 3\n"]
+#     )  # ? writes multiple strings (lines) to the file. It does NOT add "\n" (Enter) by default, you must do so manually if needed
 
-# ? opening method -> a (append)
-# * [INFO] does not rewrite the file, but rather appends new content
-with open("example3.txt", "a") as file:
-    text = "I'm appending content instead of rewriting the file\n"
-    file.write(text)
+# # ? opening method -> a (append)
+# # * [INFO] does not rewrite the file, but rather appends new content
+# with open("example3.txt", "a") as file:
+#     text = "I'm appending content instead of rewriting the file\n"
+#     file.write(text)
 
-# ? Handling two or more files at the same time
-with (
-    open("input.log", "r") as file_in,
-    open("input2.log", "r") as file_in_two,
-    open("output.log", "w") as file_out,
-):
-    content_file_one = file_in.read()
-    content_file_two = file_in_two.read()
-    file_out.write(content_file_one)
-    file_out.write(content_file_two)
+# # ? Handling two or more files at the same time
+# with (
+#     open("input.log", "r") as file_in,
+#     open("input2.log", "r") as file_in_two,
+#     open("output.log", "w") as file_out,
+# ):
+#     content_file_one = file_in.read()
+#     content_file_two = file_in_two.read()
+#     file_out.write(content_file_one)
+#     file_out.write(content_file_two)
+
+#! --- PARSING DIFFERENT FILE TYPES ---
+
+#! JSON Files
+
+with open("example.json", "r", encoding="utf-8") as file:
+    data = json.load(file)
+
+print(data.get("first_name"))
+print(data.get("last_name"))
+print(data.get("details"))
+
+#! CSV Files
+
+with open("example.csv", "r", encoding="utf-8") as file:
+    # ? DictReader maps the header row to keys for each row
+    reader = csv.DictReader(file, delimiter=",")
+
+    for row in reader:
+        print(f"{row['name']} is {row['age']} and lives in {row['city']}")
+
+data = [{"name": "Charlie", "age": 35, "city": "Chicago"}]
+
+# ? fieldnames >> Row of header names for each column, in order
+fieldnames = ["name", "age", "city"]
+
+with open("example.csv", "a", newline="\n", encoding="utf-8") as file:
+    writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=",")
+
+    # ? Writes the headers, in this case >> name,age,city
+    writer.writeheader()
+
+    writer.writerows(data)
+
+#! EXCEL Files
+
+# ? Read the excel file using pandas
+# ? OPTIONAL: Specify the sheet name if you are not looking for the first one
+df = pd.read_excel("sales.xlsx", sheet_name="Sheet1")
+
+# ? Prints the first few rows of the spreadsheet
+print(df.head())
+
+for index, row in df.iterrows():
+    print(
+        f"Row {index}: {row['employee']}'s sales for {row['quarter']} are ${row['sales']}"
+    )
+
+#! EXCEL Files Pt. II >>> Working with formulas and formatted cells
+
+from openpyxl import load_workbook
+
+excel_formulas = load_workbook("sales.xlsx", data_only=False)
+sheet = excel_formulas.active
+
+print(sheet["D2"].value)  # * Expected Outcome: =SUM(B2:B4)
+
+excel_values = load_workbook("sales.xlsx", data_only=True)
+sheet_values = excel_values.active
+
+print(sheet_values["D2"].value)  # * Expected Outcome: 4250
+
+#! FORMATTED CELLS
+
+workbook = load_workbook("sales.xlsx")
+sheet = workbook.active
+cell = sheet["B2"]
+
+print(cell.font.name)
+print(cell.font.size)
+print(cell.font.color.rgb)
+
+print(cell.fill.fill_type)
+print(cell.fill.start_color.rgb)
