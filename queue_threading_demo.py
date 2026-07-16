@@ -17,7 +17,7 @@ def file_writer(filepath="output.log"):
     with open(filepath, "a") as file:
         while True:
             # ? Check current queue size before grabbing an item
-            queue_size = log_queue.size()
+            queue_size = log_queue.qsize()
             print(f"[WRITER] Queue size before fetch: {queue_size}")
 
             # ? This blocks until an item is available in the queue
@@ -55,32 +55,35 @@ def worker(worker_id):
 
 
 if __name__ == "__main__":
-    print("[MAIN] Starting writer thread...")
-    # ? Start the writer thread as a background daemon
+    print("[Main] Starting writer thread...")
     writer_thread = threading.Thread(target=file_writer, daemon=True)
+    writer_thread.start()
 
-    print("[MAIN] Starting worker threads...")
-    # ? Start 3 worker threads
+    print("[Main] Starting worker threads...")
     workers = []
     for i in range(3):
-        thread = threading.Thread(target=worker, args=(i,))
-        workers.append(thread)
-        thread.start()
+        t = threading.Thread(target=worker, args=(i,))
+        workers.append(t)
+        t.start()
 
-    print("[MAIN] Waiting for worker threads to finish...")
-    # ? Wait for all the workers to finish their job respectively
-    for thread in workers:
-        thread.join()
-    print("[MAIN] All worker threads have finished processing...")
+    print("[Main] Waiting for worker threads to finish...")
+    for t in workers:
+        t.join()
+    print("[Main] All worker threads have finished processing.")
 
-    print("[MAIN] Waiting for the queue to completely empty out...")
-    # ? Once workers are done, wait for the queue to completely empty out
+    # 1. Wait for all real log entries to be fully written to the file
+    print("[Main] Waiting for the queue to completely empty out...")
     log_queue.join()
-    print("[MAIN] Queue is empty...")
+    print("[Main] All logs processed.")
 
-    print("[MAIN] Sending SHUTDOWN_SIGNAL to the writer thread...")
-    # ? Send the SHUTDOWN_SIGNAL to stop the writer loop and exit the script cleanly
+    # 2. Now that the queue is empty, safely send the shutdown signal
+    print("[Main] Sending shutdown signal to the writer thread...")
     log_queue.put(SHUTDOWN_SIGNAL)
+
+    # 3. Wait for the writer thread to detect the signal, exit its loop, and terminate
+    print("[Main] Waiting for writer thread to exit...")
     writer_thread.join()
 
-    print("All logs successfully written to output.log")
+    print(
+        "[Main] All logs successfully written to output.log and threads safely closed!"
+    )

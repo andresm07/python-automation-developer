@@ -255,9 +255,12 @@ with open("example.csv", "a", newline="\n", encoding="utf-8") as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=",")
 
     # ? Writes the headers, in this case >> name,age,city
-    writer.writeheader()
+    # writer.writeheader()
 
-    writer.writerows(data)
+    # writer.writerows(data)
+    for row in data:
+        print(f"Inserting: {row['name']}")
+        writer.writerow(row)
 
 #! EXCEL Files
 
