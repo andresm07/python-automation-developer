@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 from fake_api.database import DATABASE
 from fake_api.response import Response
 
-from .auth import check_api_key
+from .auth import check_api_key, check_authentication
 from .delay import simulate_delay
 from .filters import apply_filters
 from .pagination import paginate
@@ -46,6 +46,25 @@ class BaseResource:
 
     ###############################################################
 
+    def _before_request(self) -> Response | None:
+        """
+        Performs common checks before every request.
+        """
+
+        auth = check_authentication(self.config)
+
+        if auth:
+            return auth
+
+        failure = self._failure()
+
+        if failure:
+            return failure
+
+        return None
+
+    ###############################################################
+
     def list(
         self,
         page: int = 1,
@@ -55,15 +74,10 @@ class BaseResource:
         order: str = "asc",
         **filters: Any,
     ) -> Response:
-        auth = check_api_key(self.config)
+        response = self._before_request()
 
-        if auth:
-            return auth
-
-        failure = self._failure()
-
-        if failure:
-            return failure
+        if response:
+            return response
 
         elapsed = simulate_delay(
             self.config.min_delay,
@@ -129,6 +143,11 @@ class BaseResource:
     ###############################################################
 
     def get(self, item_id: int) -> Response:
+        response = self._before_request()
+
+        if response:
+            return response
+
         elapsed = simulate_delay(
             self.config.min_delay,
             self.config.max_delay,
@@ -151,6 +170,16 @@ class BaseResource:
     ###############################################################
 
     def create(self, record: dict[str, Any]) -> Response:
+        response = self._before_request()
+
+        if response:
+            return response
+
+        elapsed = simulate_delay(
+            self.config.min_delay,
+            self.config.max_delay,
+        )
+
         if not isinstance(record, dict):
             return Response(
                 status_code=400,
@@ -171,6 +200,7 @@ class BaseResource:
                     "message": "Validation failed.",
                     "missing_fields": missing_fields,
                 },
+                processing_time_ms=elapsed,
             )
 
         new_id = max(item[self.id_field] for item in self.data) + 1
@@ -182,8 +212,7 @@ class BaseResource:
         self.data.append(record)
 
         return Response(
-            status_code=201,
-            data=record,
+            status_code=201, data=record, processing_time_ms=elapsed
         )
 
     ###############################################################
@@ -193,6 +222,11 @@ class BaseResource:
         item_id: int,
         record: dict[str, Any],
     ) -> Response:
+        response = self._before_request()
+
+        if response:
+            return response
+
         elapsed = simulate_delay(
             self.config.min_delay,
             self.config.max_delay,
@@ -223,6 +257,11 @@ class BaseResource:
         item_id: int,
         values: dict[str, Any],
     ) -> Response:
+        response = self._before_request()
+
+        if response:
+            return response
+
         elapsed = simulate_delay(
             self.config.min_delay,
             self.config.max_delay,
@@ -247,6 +286,11 @@ class BaseResource:
     ###############################################################
 
     def delete(self, item_id: int) -> Response:
+        response = self._before_request()
+
+        if response:
+            return response
+
         elapsed = simulate_delay(
             self.config.min_delay,
             self.config.max_delay,
