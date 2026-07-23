@@ -19,3 +19,13 @@ class CustomersResource(BaseResource):
         "risk_level",
         "status",
     )
+
+    required_fields = [  # noqa: RUF012
+        "first_name",
+        "last_name",
+        "email",
+        "country",
+        "credit_score",
+        "risk_level",
+        "status",
+    ]

@@ -19,6 +19,7 @@ class BaseResource:
 
     searchable_fields: ClassVar[tuple[str, ...]] = ()
     sortable_fields: ClassVar[tuple[str, ...]] = ()
+    required_fields: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, config) -> None:
         self.config = config
@@ -150,21 +151,39 @@ class BaseResource:
     ###############################################################
 
     def create(self, record: dict[str, Any]) -> Response:
-        elapsed = simulate_delay(
-            self.config.min_delay,
-            self.config.max_delay,
-        )
+        if not isinstance(record, dict):
+            return Response(
+                status_code=400,
+                error={
+                    "message": "Payload must be a dictionary.",
+                    "missing_fields": [],
+                },
+            )
 
-        next_id = max(item[self.id_field] for item in self.data) + 1
+        missing_fields = [
+            field for field in self.required_fields if field not in record
+        ]
 
-        record[self.id_field] = next_id
+        if missing_fields:
+            return Response(
+                status_code=400,
+                error={
+                    "message": "Validation failed.",
+                    "missing_fields": missing_fields,
+                },
+            )
+
+        new_id = max(item[self.id_field] for item in self.data) + 1
+
+        record = record.copy()
+
+        record[self.id_field] = new_id
 
         self.data.append(record)
 
         return Response(
             status_code=201,
-            data=deepcopy(record),
-            processing_time_ms=elapsed,
+            data=record,
         )
 
     ###############################################################
