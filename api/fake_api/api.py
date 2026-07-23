@@ -7,14 +7,13 @@ resource collections (customers, applications, cases, alerts).
 
 from __future__ import annotations
 
-from utils.auth import AuthManager
-
 from .config import APIConfig
 from .resources.alerts import AlertsResource
 from .resources.applications import ApplicationsResource
 from .resources.cases import CasesResource
 from .resources.customers import CustomersResource
 from .response import Response
+from .utils.auth import AuthManager
 
 
 class FakeAPI:
@@ -45,10 +44,6 @@ class FakeAPI:
         self.config = APIConfig(
             client_api_key=api_key,
         )
-
-        # OAuth-style access token
-        # (empty until authenticate() succeeds)
-        self.config.access_token = None
 
         # Resources
         self.customers = CustomersResource(self.config)

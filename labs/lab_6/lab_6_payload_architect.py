@@ -11,8 +11,10 @@ from fake_api import FakeAPI  # type: ignore
 
 api = FakeAPI(api_key="training-key")
 
+
 def create_customer(customer):
     return api.customers.create(customer)
+
 
 def main():
     customer = {

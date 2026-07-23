@@ -9,6 +9,9 @@ class APIConfig:
     # Client API key
     client_api_key: str = ""
 
+    # OAuth-style Bearer Token
+    access_token: str | None = None
+
     # Artificial latency
     min_delay: float = 0.15
     max_delay: float = 0.75

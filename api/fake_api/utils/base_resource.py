@@ -7,7 +7,7 @@ from typing import Any, ClassVar
 from fake_api.database import DATABASE
 from fake_api.response import Response
 
-from .auth import check_api_key, check_authentication
+from .auth import check_authentication
 from .delay import simulate_delay
 from .filters import apply_filters
 from .pagination import paginate
