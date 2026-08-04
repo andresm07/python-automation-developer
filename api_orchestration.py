@@ -30,6 +30,7 @@ from tenacity import (
     before_sleep_log,
     retry,
     stop_after_attempt,
+    wait_exponential,
     wait_exponential_jitter,
 )
 
@@ -81,11 +82,11 @@ def fetch_paginated_api_data(url: str, retry_state: RetryCallState = None):
     return response.json()
 
 
-try:
-    data = fetch_api_data("https://api.example.com/data")
-    print("Data Fetched Successfully")
-except Exception as e:
-    print(f"Failed after 5 attempts: {e}")
+# try:
+#     data = fetch_api_data("https://api.example.com/data")
+#     print("Data Fetched Successfully")
+# except Exception as e:
+#     print(f"Failed after 5 attempts: {e}")
 
 #! ------- EXPONENTIAL BACKOFF w NATIVE PYTHON MODULES -------
 
@@ -135,5 +136,74 @@ def fragile_network_call():
     return "Data Fetched Successfully"
 
 
-result = call_with_exponential_backoff(fragile_network_call)
-print(result)
+# result = call_with_exponential_backoff(fragile_network_call)
+# print(result)
+
+#! ------- "EXPONENTIAL BACKOFF" w RETRY-AFTER HEADERS FROM API -------
+
+
+class DynamicHeaderWait:
+    def __init__(self, fallback_wait):
+        self.fallback_wait = fallback_wait
+
+    def __call__(self, retry_state: RetryCallState) -> float:
+        # ? Check if the last outcome was an exception containing an HTTP response
+        if retry_state.outcome.failed:
+            exception = retry_state.outcome.exception()
+
+            # ? Check requests/httpx style HTTP Errors
+            if (
+                isinstance(exception, requests.exceptions.RequestException)
+                and exception.response is not None
+            ):
+                retry_after = exception.response.headers.get("Retry-After")
+
+                # ? Headers usually return seconds as an integer/float string
+                if retry_after:
+                    try:
+                        seconds = float(retry_after)
+                        print(
+                            f"[DynamicHeaderWait] Retry-After Header found. Override wait time to: {seconds}s "
+                        )
+                        return seconds
+                    except ValueError:
+                        pass
+
+        # ? Fallback to standard exponential wait if no header is present
+        print(
+            f"[DynamicHeaderWait] No Retry-After Header found. Using exponential backoff fallback waiting time."
+        )
+        return self.fallback_wait(retry_state)
+
+
+def log_before_sleep(retry_state):
+    attempt = retry_state.attempt_number
+    sleep_time = retry_state.next_action.sleep
+    print(
+        f"[Tenacity] Attempt #{attempt} failed. Sleeping for {sleep_time:.2f}s before retrying."
+    )
+
+
+@retry(
+    wait=DynamicHeaderWait(fallback_wait=wait_exponential(min=1, max=10)),
+    stop=stop_after_attempt(5),
+    before_sleep=log_before_sleep,
+    reraise=True,
+)
+def fetch_from_httpbun():
+    # ? Forcing httpbun to reply with a 426 status code AND a "Retry-After: 5s" header
+    url = "https://httpbun.com/response-headers?Retry-After=5"
+
+    print("Sending request to endpoint")
+
+    response = requests.get(url)
+    response.status_code = 429
+    response.raise_for_status()  # ? Raises HTTP Error
+
+    return response.json()
+
+
+try:
+    data = fetch_from_httpbun()
+except requests.exceptions.HTTPError as e:
+    print(f"[Final Output]: All retries exhausted: {e}")
