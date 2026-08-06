@@ -23,6 +23,7 @@ employee_from_json = json.loads(employee_json)
 #! ------- EXPONENTIAL BACKOFF w TENACITY -------
 
 import logging
+import random
 
 import requests
 from tenacity import (
@@ -82,15 +83,14 @@ def fetch_paginated_api_data(url: str, retry_state: RetryCallState = None):
     return response.json()
 
 
-# try:
-#     data = fetch_api_data("https://api.example.com/data")
-#     print("Data Fetched Successfully")
-# except Exception as e:
-#     print(f"Failed after 5 attempts: {e}")
+try:
+    data = fetch_api_data("https://api.example.com/data")
+    print("Data Fetched Successfully")
+except Exception as e:
+    print(f"Failed after 5 attempts: {e}")
 
 #! ------- EXPONENTIAL BACKOFF w NATIVE PYTHON MODULES -------
 
-import random
 import time
 
 
@@ -136,8 +136,8 @@ def fragile_network_call():
     return "Data Fetched Successfully"
 
 
-# result = call_with_exponential_backoff(fragile_network_call)
-# print(result)
+result = call_with_exponential_backoff(fragile_network_call)
+print(result)
 
 #! ------- "EXPONENTIAL BACKOFF" w RETRY-AFTER HEADERS FROM API -------
 
@@ -197,7 +197,19 @@ def fetch_from_httpbun():
     print("Sending request to endpoint")
 
     response = requests.get(url)
-    response.status_code = 429
+
+    randomStatusCode = random.randint(1, 3)
+
+    if randomStatusCode == 1:
+        print("[Mock Server] Simulating 429 Too Many Requests")
+        response.status_code = 429
+    elif randomStatusCode == 2:
+        print("[Mock Server] Simulating 503 Service Unavailable")
+        response.status_code = 503
+    else:
+        print("[Mock Server] Simulating 200 OK")
+        response.status_code = 200
+
     response.raise_for_status()  # ? Raises HTTP Error
 
     return response.json()
@@ -207,3 +219,241 @@ try:
     data = fetch_from_httpbun()
 except requests.exceptions.HTTPError as e:
     print(f"[Final Output]: All retries exhausted: {e}")
+
+#! ----- PAGINATION -----
+
+# ? ----- LIMIT & OFFSET STRATEGY -----
+
+
+def fetch_limit_offset_data(
+    base_url: str, total_items: int = 50, batch_size: int = 10
+):
+    offset = 0
+    all_records = []
+
+    print(f"Fetching data using Offset/Limit (Batch Size: {batch_size})")
+
+    while offset < total_items:
+        params = {
+            "batch_size": batch_size,
+            "offset": offset,
+        }
+
+        response = requests.get(f"{base_url}/get", params=params)
+        response.raise_for_status()
+
+        data = response.json()
+        current_args = data.get("args", {})
+
+        req_batch_size = int(current_args.get("batch_size", [0])[0])
+        req_offset = int(current_args.get("offset", [0])[0])
+
+        # ? Mock item generation based on the offset and batch_size
+        items_count = min(req_batch_size, total_items - req_offset)
+        page_items = [
+            f"Item-{i} - Batch Size/Offset"
+            for i in range(req_offset + 1, req_offset + items_count + 1)
+        ]
+
+        all_records.extend(page_items)
+
+        print(
+            f"Fetched page starting at offset {req_offset}: Retrieved {len(page_items)} items"
+        )
+
+        offset += batch_size
+
+    print(f"Total items retrieved: {len(all_records)} items.")
+    print(f"Records: {all_records}")
+
+
+fetch_limit_offset_data("https://httpbun.com")
+
+# ? ----- CURSOR / NEXT-PAGE TOKEN STRATEGY -----
+
+
+def fetch_cursor_data(base_url: str, max_pages: int = 4, batch_size: int = 10):
+    next_token = (
+        "token_page_1"  #! If API needs initial token, if not set to None
+    )
+    page_count = 0
+    all_records = []
+
+    print(
+        f"\n\n\nFetching data using Cursor/Next-Page Token (Batch Size: {batch_size})"
+    )
+
+    while True:
+        if not next_token:
+            break
+
+        params = {"batch_size": batch_size, "cursor": next_token}
+
+        response = requests.get(f"{base_url}/get", params=params)
+        response.raise_for_status()
+
+        data = response.json()
+
+        raw_cursor = data.get("args", {}).get("cursor", None)
+        current_cursor = (
+            raw_cursor[0] if isinstance(raw_cursor, list) else raw_cursor
+        )
+
+        page_count += 1
+        page_items = [
+            f"Record-{page_count}-{i} Cursor/Next-Page Token"
+            for i in range(1, batch_size + 1)
+        ]
+
+        all_records.extend(page_items)
+
+        print(
+            f"Page {page_count}: Processed {len(page_items)} items using cursor '{current_cursor}'"
+        )
+
+        if page_count >= max_pages:
+            break
+
+        next_token = f"token_page_{page_count + 1}"
+
+    print(
+        f"Total retrieved: {len(all_records)} items across {page_count} pages"
+    )
+    print(all_records)
+
+
+fetch_cursor_data("https://httpbun.com")
+
+# ? ----- CURSOR / NEXT-PAGE TOKEN STRATEGY w GENERATORS -----
+
+"""
+Standard Functions: [Fetch All Data] -> [Loads 10,000 items in RAM] -> Return List
+Generator: [Yield Page 1] -> Pause -> [Yield Page 2] -> Pause -> ...
+"""
+
+""""
+- Memory Efficient: If the API has 100,000 records, you don't need to load all into a huge list. You consume each item or batch of items as it comes.
+- Instant Response: The application can start processing the first batch immediately without waiting for the entire pagination sequence to finish HTTP request.
+- Clean Code: It decouples the fetching logic fom the consumption logic.
+"""
+
+
+def fetch_cursor_data_w_generators(
+    base_url: str, max_pages: int = 4, batch_size: int = 10
+):
+    next_token = "token_page_1"
+    page_count = 0
+
+    print(
+        f"\n\n\nFetching data using Cursor/Next-Page Token + Generators (Batch Size: {batch_size})"
+    )
+
+    while True:
+        if not next_token:
+            break
+
+        params = {
+            "batch_size": batch_size,
+            "cursor": next_token,
+        }
+
+        response = requests.get(f"{base_url}/get", params=params)
+        response.raise_for_status()
+
+        data = response.json()
+
+        raw_cursor = data.get("args", {}).get("cursor", None)
+        current_cursor = (
+            raw_cursor[0] if isinstance(raw_cursor, list) else raw_cursor
+        )
+
+        page_count += 1
+        page_items = [
+            f"Record--{i} Page-{page_count} Cursor/Next-Page Token w Generators"
+            for i in range(1, batch_size + 1)
+        ]
+
+        #! YIELD the entire batch of items back to the caller
+        yield page_items, current_cursor
+
+        if page_count >= max_pages:
+            break
+
+        next_token = f"token_page_{page_count + 1}"
+
+
+for batch, token in fetch_cursor_data_w_generators(
+    "https://httpbun.com", max_pages=3, batch_size=5
+):
+    print(f"Retrieved batch using token: '{token}': {batch}")
+
+# ? ----- CURSOR / NEXT-PAGE TOKEN STRATEGY w E-TAG CACHING -----
+
+"""
+Feature     | ETag Caching              | Standard Caching
+------------|---------------------------|----------------------------
+HTTP Headers| ETag & If-None-Match      | Cache-Control: max-age=XX
+------------|---------------------------|----------------------------
+Network Req | Yes - Sends fast 304 check| Uses cached copies w/o req
+------------|---------------------------|----------------------------
+Use Cases   | Dynamic data, paginated   | Static assets, historical
+            | lists, user profiles      | records, immutable files
+------------|---------------------------|----------------------------
+Data        | Guaranteed real-time      | Subject to stale data if
+Freshness   | accuracy                  | backend updates before time
+            |                           | expires
+------------|---------------------------|----------------------------
+"""
+
+
+class ETagCachedClient:
+    def __init__(self):
+        self._cache = {}
+
+    def get(self, url: str):
+        headers = {}
+        cached_entry = self._cache.get(url)
+
+        if cached_entry and "etag" in cached_entry:
+            headers["If-None-Match"] = cached_entry["etag"]
+
+        response = requests.get(url, headers=headers)
+
+        # ? Cache Hit: Data on server hasn't changed
+        if response.status_code == 304:
+            print(f"[304 Not Modified] Cache hit: Zero payload download")
+
+            return cached_entry["data"]
+        elif response.status_code == 200:
+            print(f"[200 OK] Cache Miss: Downloading payload")
+
+            try:
+                data = response.json()
+            except ValueError:
+                data = response.text
+
+            etag = response.headers.get("ETag") or response.headers.get("etag")
+
+            if etag:
+                self._cache[url] = {"etag": etag, "data": data}
+
+                return data
+            else:
+                response.raise_for_status()
+
+
+client = ETagCachedClient()
+test_url = "https://httpbun.com/etag/v1.0-hash-abc123"
+
+print("--- Step 1: Initial Request (Cold Cache) ---")
+data1 = client.get(test_url)
+print(f"Data 1: {data1}")
+
+print("--- Step 2: Subsequent Request (Warm Cache) ---")
+data2 = client.get(test_url)
+print(f"Data 2: {data2}")
+
+print("--- Step 3: Requesting Modified Resource (Cache Invalidation) ---")
+updated_url = "https://httpbun.com/etag/v2.0-hash-xyz789"
+data3 = client.get(updated_url)
+print(f"Data 3: {data3}")
