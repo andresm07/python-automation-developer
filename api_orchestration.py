@@ -272,7 +272,7 @@ fetch_limit_offset_data("https://httpbun.com")
 # ? ----- CURSOR / NEXT-PAGE TOKEN STRATEGY -----
 
 
-def fetch_cursor_data(base_url: str, max_pages: int = 4, batch_size: int = 10):
+def fetch_cursor_data(base_url: str, max_pages: int = 4, batch_size: int = 50):
     next_token = (
         "token_page_1"  #! If API needs initial token, if not set to None
     )
@@ -320,6 +320,8 @@ def fetch_cursor_data(base_url: str, max_pages: int = 4, batch_size: int = 10):
         f"Total retrieved: {len(all_records)} items across {page_count} pages"
     )
     print(all_records)
+
+    assert len(all_records) == max_pages * batch_size
 
 
 fetch_cursor_data("https://httpbun.com")
@@ -405,6 +407,8 @@ Freshness   | accuracy                  | backend updates before time
 ------------|---------------------------|----------------------------
 """
 
+from urllib.parse import urlparse
+
 
 class ETagCachedClient:
     def __init__(self):
@@ -414,16 +418,23 @@ class ETagCachedClient:
         headers = {}
         cached_entry = self._cache.get(url)
 
+        # ? 1. Attach If-None-Match header if we have a cached ETag
         if cached_entry and "etag" in cached_entry:
-            headers["If-None-Match"] = cached_entry["etag"]
+            etag_val = cached_entry["etag"]
+            clean_etag = etag_val.strip('"')
+
+            headers["If-None-Match"] = clean_etag
 
         response = requests.get(url, headers=headers)
 
-        # ? Cache Hit: Data on server hasn't changed
+        # ? 2. CACHE HIT: Server returned 304 Not Modified
         if response.status_code == 304:
             print(f"[304 Not Modified] Cache hit: Zero payload download")
+            print(f"  └─ Cached ETag: {etag}")
 
             return cached_entry["data"]
+
+        # ? 3. CACHE MISS / FRESH DATA: Server returned 200 OK
         elif response.status_code == 200:
             print(f"[200 OK] Cache Miss: Downloading payload")
 
@@ -434,18 +445,25 @@ class ETagCachedClient:
 
             etag = response.headers.get("ETag") or response.headers.get("etag")
 
+            #! httpbun fix: /etag/:tag doesn't send ETag in response headers,
+            #! so we fallback to extracting the tag from the URL path if missing.
+            if not etag and "/etag/" in url:
+                tag_from_url = urlparse(url).path.split("/")[-1]
+                etag = f'"{tag_from_url}"'
+
             if etag:
+                print(f"  └─ Cached ETag: {etag}")
                 self._cache[url] = {"etag": etag, "data": data}
 
-                return data
-            else:
-                response.raise_for_status()
+            return data
+        else:
+            response.raise_for_status()
 
 
 client = ETagCachedClient()
 test_url = "https://httpbun.com/etag/v1.0-hash-abc123"
 
-print("--- Step 1: Initial Request (Cold Cache) ---")
+print("\n\n\n--- Step 1: Initial Request (Cold Cache) ---")
 data1 = client.get(test_url)
 print(f"Data 1: {data1}")
 
