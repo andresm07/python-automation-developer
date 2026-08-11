@@ -1,0 +1,5 @@
+order_id,price,id,name,contact.email,contact.phone,location.city,location.state,location.zip
+ord-01,120.0,1,Alice,alice@example.com,123-456-7890,San Francisco,CA,94784
+ord-02,130.0,1,Alice,alice@example.com,123-456-7890,San Francisco,CA,94784
+ord-03,140.0,2,Bob,bob@example.com,456-789-1230,Austin,TX,45678
+ord-04,150.0,2,Bob,bob@example.com,456-789-1230,Austin,TX,45678

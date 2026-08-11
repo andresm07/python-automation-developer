@@ -1,0 +1,46 @@
+[
+    {
+        "order_id":"ord-01",
+        "price":120.0,
+        "id":1,
+        "name":"Alice",
+        "contact.email":"alice@example.com",
+        "contact.phone":"123-456-7890",
+        "location.city":"San Francisco",
+        "location.state":"CA",
+        "location.zip":"94784"
+    },
+    {
+        "order_id":"ord-02",
+        "price":130.0,
+        "id":1,
+        "name":"Alice",
+        "contact.email":"alice@example.com",
+        "contact.phone":"123-456-7890",
+        "location.city":"San Francisco",
+        "location.state":"CA",
+        "location.zip":"94784"
+    },
+    {
+        "order_id":"ord-03",
+        "price":140.0,
+        "id":2,
+        "name":"Bob",
+        "contact.email":"bob@example.com",
+        "contact.phone":"456-789-1230",
+        "location.city":"Austin",
+        "location.state":"TX",
+        "location.zip":"45678"
+    },
+    {
+        "order_id":"ord-04",
+        "price":150.0,
+        "id":2,
+        "name":"Bob",
+        "contact.email":"bob@example.com",
+        "contact.phone":"456-789-1230",
+        "location.city":"Austin",
+        "location.state":"TX",
+        "location.zip":"45678"
+    }
+]
