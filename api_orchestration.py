@@ -500,6 +500,7 @@ data = [
 print(f"Nested JSON: \n\n{data}")
 df = pd.json_normalize(data)
 df["dob"] = pd.to_datetime(df["dob"], errors="coerce")
+df["dob_iso_format"] = df["dob"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 print(f"Normalized DataFrame: \n{df}")
 
 # ? JSON W NESTED ARRAYS
@@ -560,7 +561,7 @@ data_w_arrays = [
     },
     {
         "id": 2,
-        # "name": "Bob"
+        # "name": "Bob",
         "contact": {"email": "bob@example.com", "phone": "456-789-1230"},
         "location": {"city": "Austin", "state": "TX", "zip": "45678"},
         "orders": [
