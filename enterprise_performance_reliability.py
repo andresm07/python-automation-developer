@@ -169,7 +169,7 @@ def get_function_memory(func, *args, **kwargs):
 
 
 def heavy_calculation():
-    return [i**2 for i in range(10)]
+    return [i**2 for i in range(1000000)]
 
 
 res = get_function_memory(heavy_calculation)
@@ -179,3 +179,27 @@ res = get_function_memory(heavy_calculation)
 #     return (1, 2, 3, 4, 5)
 
 # first, second, third, fourth, fifth = example()
+
+#! TIME EXECUTION DETERMINATION
+
+import gc
+import time
+
+
+def get_function_time(func, *args, **kwargs):
+    gc.disable()
+
+    start_time = time.perf_counter()
+
+    result = func(*args, **kwargs)
+
+    elapsed_time = time.perf_counter() - start_time
+
+    gc.enable()
+
+    print(f"[{func.__name__}] Execution Time: {elapsed_time:.6f} seconds")
+
+    return result
+
+
+res = get_function_time(heavy_calculation)
