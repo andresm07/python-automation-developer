@@ -1,4 +1,4 @@
-#! --- 2026.08.12=3 ---
+#! --- 2026.08.12 ---
 
 #! BIG O NOTATION EXAMPLES
 
@@ -131,8 +131,51 @@ def simple_generator():
 
 
 gen = simple_generator()
-print(gen)
+# print(gen)
 
-print(next(gen))
-print(next(gen))
-print(next(gen))
+# print(next(gen))
+# print(next(gen))
+# print(next(gen))
+
+#! --- 2026.08.18 ---
+
+import sys
+import tracemalloc
+
+#! MEMORY USAGE DETERMINATION
+
+x = [1, 2, 3, 4, 5]
+print(f"Memory size: {sys.getsizeof(x)} bytes")
+
+
+def get_function_memory(func, *args, **kwargs):
+    tracemalloc.start()
+
+    result = func(*args, **kwargs)
+
+    #! TUPLE DESTRUCTURING *
+    current, peak = tracemalloc.get_traced_memory()
+
+    tracemalloc.stop()
+
+    print(
+        f"[{func.__name__}] Net Allocated Memory: {current / (1024 * 1024):.2f} MB"
+    )
+    print(
+        f"[{func.__name__}] Peak Memory Allocation: {peak / (1024 * 1024):.2f} MB"
+    )
+
+    return result
+
+
+def heavy_calculation():
+    return [i**2 for i in range(10)]
+
+
+res = get_function_memory(heavy_calculation)
+
+#! TUPLE DESTRUCTURING
+# def example():
+#     return (1, 2, 3, 4, 5)
+
+# first, second, third, fourth, fifth = example()
