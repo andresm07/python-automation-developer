@@ -172,7 +172,7 @@ def heavy_calculation():
     return [i**2 for i in range(1000000)]
 
 
-res = get_function_memory(heavy_calculation)
+# res = get_function_memory(heavy_calculation)
 
 #! TUPLE DESTRUCTURING
 # def example():
@@ -202,4 +202,35 @@ def get_function_time(func, *args, **kwargs):
     return result
 
 
-res = get_function_time(heavy_calculation)
+# res = get_function_time(heavy_calculation)
+
+#! --- 2026.08.20 ---
+
+from logger import logger
+
+# import logging
+
+# logging.basicConfig(
+#     filename="app.log",
+#     level=logging.INFO,
+#     format="%(asctime)s - %(name)s - %(filename)s - %(levelname)s - [%(lineno)d]: %(funcName)s - %(message)s",
+#     datefmt="%Y-%m-%d %H:%M:%S",
+# )
+
+logger.info("Automation Script Started")
+logger.warning("Low Disk Space")
+logger.error("Disk Space at Critical Level")
+logger.critical("Memory Limit Threshold Reached")
+logger.info("password: abc123!")
+
+
+def addition(value_one: int, value_two: int) -> int:
+    logger.info(f"Adding {value_one} + {value_two}")
+
+    return value_one + value_two
+
+
+addition(1, 1)
+
+#! with open("app.log", "r") as file:
+#!     # do whatever is needed with the file

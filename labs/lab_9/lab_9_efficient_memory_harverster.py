@@ -92,25 +92,28 @@ if __name__ == "__main__":
     MAX_PAGES = 10
     BATCH_SIZE = 50
 
-    print("\n--- Timing Profile ---")
-    high_risk_time_res = get_function_time(
-        lambda *args, **kwargs: list(
-            fetch_cursor_data_stream(*args, **kwargs)
-        ),
-        BASE_URL,
-        max_pages=MAX_PAGES,
-        batch_size=BATCH_SIZE,
-    )
+    DEBUG_FLAG = False
 
-    print("\n --- Memory Profile ---")
-    high_risk_memory_res = get_function_memory(
-        lambda *args, **kwargs: list(
-            fetch_cursor_data_stream(*args, **kwargs)
-        ),
-        BASE_URL,
-        max_pages=MAX_PAGES,
-        batch_size=BATCH_SIZE,
-    )
+    if DEBUG_FLAG:
+        print("\n--- Timing Profile ---")
+        high_risk_time_res = get_function_time(
+            lambda *args, **kwargs: list(
+                fetch_cursor_data_stream(*args, **kwargs)
+            ),
+            BASE_URL,
+            max_pages=MAX_PAGES,
+            batch_size=BATCH_SIZE,
+        )
+
+        print("\n --- Memory Profile ---")
+        high_risk_sk_memory_res = get_function_memory(
+            lambda *args, **kwargs: list(
+                fetch_cursor_data_stream(*args, **kwargs)
+            ),
+            BASE_URL,
+            max_pages=MAX_PAGES,
+            batch_size=BATCH_SIZE,
+        )
 
     high_risk_clients = []
     total_processed = 0
