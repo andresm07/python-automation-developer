@@ -1,0 +1,20 @@
+{
+    "timestamp": "2026-08-20T15:42:18.338259+00:00",
+    "level": "INFO",
+    "logger": "custom_logger",
+    "message": "Logger health check",
+    "source": {
+        "file": "splunk_logger.py",
+        "line": 96,
+        "function": "<module>"
+    },
+    "process_id": 7420,
+    "thread_id": 7148,
+    "extra": {
+        "relativeCreated": 93.5066,
+        "taskName": null,
+        "status_code": 200,
+        "latency_ms": 12.4,
+        "description": "Logger is working!"
+    }
+}
